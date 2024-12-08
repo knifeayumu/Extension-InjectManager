@@ -87,7 +87,8 @@ function isSlashCommandsExecuting() {
 function renderElement(forceRender = false) {
     if (isSlashCommandsExecuting() && !forceRender) {
         console.debug('[Inject Manager] Slash commands are still executing, delaying render');
-        return renderElementDebounced();
+        renderElementDebounced();
+        return;
     }
 
     const context = SillyTavern.getContext();
@@ -473,7 +474,10 @@ function renderSideBarContent() {
         context.eventTypes.CHARACTER_MESSAGE_RENDERED,
         context.eventTypes.USER_MESSAGE_RENDERED,
         context.eventTypes.GROUP_MEMBER_DRAFTED,
+        context.eventTypes.WORLD_INFO_ACTIVATED,
         context.eventTypes.GENERATION_STARTED,
+        context.eventTypes.GENERATION_ENDED,
+        context.eventTypes.GENERATION_STOPPED,
         context.eventTypes.GENERATION_AFTER_COMMANDS,
     ];
 
