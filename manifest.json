@@ -7,5 +7,6 @@
     "css": "style.css",
     "author": "Cohee1207",
     "version": "1.0.0",
-    "homePage": "https://github.com/SillyTavern/Extension-InjectManager"
+    "homePage": "https://github.com/SillyTavern/Extension-InjectManager",
+    "auto_update": true
 }
