@@ -1,6 +1,26 @@
 const unsnake = (/** @type {string} */ str) => str ? str.toLowerCase().replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) : '';
-const renderElementDebounced = SillyTavern.libs.lodash.debounce(renderElement, 500);
+const renderElementDebounced = SillyTavern.libs.lodash.debounce(renderElement, 300);
 const settingsKey = 'injectManager';
+
+const injectRoles = Object.freeze({
+    /** SYSTEM */
+    [0]: '⚙️',
+    /** USER */
+    [1]: '👤',
+    /** ASSISTANT */
+    [2]: '🤖',
+});
+
+const injectPositions = Object.freeze({
+    /** NONE */
+    [-1]: '–',
+    /** AFTER PROMPT */
+    [0]: '↓',
+    /** IN-CHAT */
+    [1]: '@',
+    /** BEFORE PROMPT */
+    [2]: '↑',
+});
 
 const elementPositionClasses = Object.freeze({
     TOP_LEFT: 'topLeft',
@@ -101,7 +121,7 @@ function renderElement(forceRender = false) {
     const injectsElement = document.createElement('div');
     injectsElement.id = 'injectManagerElement';
     injectsElement.classList.add('injectsElement', parentClass, settings.positionClass, settings.zIndexClass, settings.sizeClass);
-    injectsElement.title = context.t`There are ${context.chatMetadata['script_injects']?.length ?? 0} injects in this chat.`;
+    injectsElement.title = context.t`There are ${numberOfInjects} injects in this chat. Click to manage.`;
 
     const injectsCountElement = document.createElement('div');
     injectsCountElement.classList.add('injectsCount');
@@ -112,13 +132,17 @@ function renderElement(forceRender = false) {
     injectsIconElement.classList.add('injectsIcon', 'fa-solid', 'fa-syringe', 'fa-fw', 'fa-sm');
 
     injectsElement.append(injectsCountElement, injectsIconElement);
+    injectsElement.addEventListener('click', () => toggleSideBar(!isSideBarOpen()));
 
     const shouldAppend = settings.positionClass.startsWith('bottom') && settings.parentSelector === elementParentSelectors.CHAT;
     shouldAppend ? parent.append(injectsElement) : parent.prepend(injectsElement);
+
+    if (isSideBarOpen()) {
+        renderSideBarContent();
+    }
 }
 
 function renderExtensionSettings() {
-
     const context = SillyTavern.getContext();
     const settingsContainer = document.getElementById('injects_container') ?? document.getElementById('extensions_settings2');
     if (!settingsContainer) {
@@ -269,6 +293,166 @@ function renderExtensionSettings() {
     inlineDrawerContent.append(zIndexSelectLabel, zIndexSelect);
 }
 
+function renderSideBar() {
+    const movingDivs = document.getElementById('movingDivs');
+
+    if (!movingDivs) {
+        console.warn('[Inject Manager] Moving divs not found.');
+        return;
+    }
+
+    const draggableTemplate = /** @type {HTMLTemplateElement} */ (document.getElementById('generic_draggable_template'));
+
+    if (!draggableTemplate) {
+        console.warn('[Inject Manager] Draggable template not found.');
+        return;
+    }
+
+    const fragment = /** @type {DocumentFragment} */ (draggableTemplate.content.cloneNode(true));
+    const draggable = fragment.querySelector('.draggable');
+    const closeButton = fragment.querySelector('.dragClose');
+
+    if (!draggable || !closeButton) {
+        console.warn('[Inject Manager] Failed to find draggable or close button.');
+        return;
+    }
+
+    draggable.id = 'injectManagerSideBar';
+    closeButton.addEventListener('click', () => {
+        draggable.classList.remove('visible');
+    });
+
+    const scrollContainer = document.createElement('div');
+    scrollContainer.id = 'injectManagerSideBarContainer';
+    draggable.appendChild(scrollContainer);
+
+    movingDivs.appendChild(draggable);
+}
+
+/**
+ * Toggle the sidebar visibility.
+ * @param {boolean} state New visibility state
+ */
+function toggleSideBar(state) {
+    const sideBar = document.getElementById('injectManagerSideBar');
+    if (!sideBar) {
+        console.warn('[Inject Manager] Sidebar not found.');
+        return;
+    }
+
+    sideBar.classList.toggle('visible', state);
+    renderSideBarContent();
+}
+
+function isSideBarOpen() {
+    const sideBar = document.getElementById('injectManagerSideBar');
+    return sideBar && sideBar.classList.contains('visible');
+}
+
+function renderSideBarContent() {
+    const context = SillyTavern.getContext();
+    const container = document.getElementById('injectManagerSideBarContainer');
+
+    if (!container) {
+        console.warn('[Inject Manager] Sidebar container not found.');
+        return;
+    }
+
+    const injects = context.chatMetadata['script_injects'] ?? {};
+    container.innerHTML = '';
+
+    const hasAnyInjects = Object.keys(injects).length > 0;
+
+    if (!hasAnyInjects) {
+        const noInjects = document.createElement('div');
+        noInjects.classList.add('sideBarNoInjects');
+        noInjects.textContent = context.t`No injects found.`;
+        container.append(noInjects);
+        return;
+    }
+
+    for (const [id, inject] of Object.entries(injects)) {
+        const prefixedId = `script_inject_${id}`;
+        const injectContainer = document.createElement('div');
+        injectContainer.classList.add('sideBarInjectContainer');
+
+        const injectInfoContainer = document.createElement('div');
+        const injectInfoTopRow = document.createElement('div');
+        const injectInfoBottomRow = document.createElement('div');
+        injectInfoContainer.classList.add('sideBarInjectInfoContainer');
+        injectInfoTopRow.classList.add('sideBarInjectInfoTopRow');
+        injectInfoBottomRow.classList.add('sideBarInjectInfoBottomRow');
+        injectInfoContainer.append(injectInfoTopRow, injectInfoBottomRow);
+
+        const injectId = document.createElement('div');
+        injectId.classList.add('sideBarInjectId');
+        injectId.textContent = id;
+        injectId.title = id;
+
+        const injectValue = document.createElement('div');
+        injectValue.classList.add('sideBarInjectValue');
+        injectValue.textContent = inject.value;
+        injectValue.title = inject.value;
+
+        const injectRole = document.createElement('div');
+        injectRole.classList.add('sideBarInjectRole');
+        injectRole.textContent = injectRoles[inject.role];
+
+        const injectPosition = document.createElement('div');
+        injectPosition.classList.add('sideBarInjectPosition');
+        injectPosition.textContent = injectPositions[inject.position];
+
+        const injectDepth = document.createElement('div');
+        injectDepth.classList.add('sideBarInjectDepth');
+        injectDepth.textContent = inject.depth;
+
+        injectInfoTopRow.append(injectId, injectRole, injectPosition, injectDepth);
+        injectInfoBottomRow.append(injectValue);
+
+        const injectActions = document.createElement('div');
+        injectActions.classList.add('sideBarInjectActions');
+
+        const injectDelete = document.createElement('div');
+        injectDelete.classList.add('fa-solid', 'fa-trash-alt', 'menu_button');
+        injectDelete.title = context.t`Delete`;
+        injectDelete.addEventListener('click', async (event) => {
+            event.stopPropagation();
+            const confirmation = await context.Popup.show.confirm(context.t`Are you sure?`, null);
+
+            if (!confirmation) {
+                return;
+            }
+
+            delete injects[id];
+            context.setExtensionPrompt(prefixedId, '', inject.position, inject.depth, inject.scan, inject.role);
+            await context.saveMetadata();
+
+            renderSideBarContent();
+            renderElement(true);
+        });
+        injectActions.append(injectDelete);
+
+        injectContainer.append(injectInfoContainer, injectActions);
+        injectContainer.addEventListener('click', async () => {
+            const viewTextArea = document.createElement('textarea');
+            viewTextArea.value = inject.value;
+            viewTextArea.classList.add('injectManagerViewTextArea', 'text_pole', 'monospace');
+            viewTextArea.addEventListener('input', () => {
+                inject.value = viewTextArea.value;
+                injectValue.textContent = viewTextArea.value;
+                injectValue.title = viewTextArea.value;
+                context.setExtensionPrompt(prefixedId, viewTextArea.value, inject.position, inject.depth, inject.scan, inject.role);
+                context.saveMetadata();
+            });
+            const popupPromise = context.callGenericPopup(viewTextArea, context.POPUP_TYPE.TEXT);
+            viewTextArea.focus();
+            await popupPromise;
+            await context.saveMetadata();
+        });
+        container.append(injectContainer);
+    }
+}
+
 (function initExtension() {
     const context = SillyTavern.getContext();
 
@@ -301,4 +485,5 @@ function renderExtensionSettings() {
 
     renderExtensionSettings();
     renderElementDebounced();
+    renderSideBar();
 })();
