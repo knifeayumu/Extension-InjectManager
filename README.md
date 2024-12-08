@@ -4,6 +4,10 @@ Adds a floating element that shows the number of script injections in the prompt
 
 Click the counter to bring up a sidebar with options to view/edit/delete the injections.
 
+## Requirements
+
+SillyTavern 1.12.8 and above.
+
 ## How to install
 
 Use this URL with the extension installer:
