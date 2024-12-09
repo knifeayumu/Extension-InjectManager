@@ -20,12 +20,12 @@ https://github.com/SillyTavern/Extension-InjectManager
 
 Find "Inject Manager" in the extensions panel.
 
-* "Enabled" – toggle the extension on and off.
-* "Show if empty" – show the button element when there's no injects.
-* "Container element" – choose a parent for the button (chat block or the whole page).
-* "Element position" – choose one of the preset position for the counter (top/bottom left/right/center).
-* "Element size" – change the font size of the counter (small/normal/large).
-* "Render order" – change if the element appears below or above the panels (only for body container).
+* "Enabled" (default: on) – toggle the extension on and off.
+* "Show if empty" (default: off) – show the button element when there's no injects.
+* "Container element" (default: chat) – choose a parent for the button (chat block or the whole page).
+* "Element position" (default: top-left) – choose one of the preset position for the counter (top/bottom left/right/center).
+* "Element size" (default: normal) – change the font size of the counter (small/normal/large).
+* "Render order" (default: above panels) – change if the element appears below or above the panels (only for body container).
 
 ## License
 
