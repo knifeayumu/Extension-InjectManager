@@ -1,3 +1,5 @@
+export default 'InjectManager'; // Init ES module
+
 const unsnake = (/** @type {string} */ str) => str ? str.toLowerCase().replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) : '';
 const renderElementDebounced = SillyTavern.libs.lodash.debounce(renderElement, 300);
 const settingsKey = 'injectManager';
